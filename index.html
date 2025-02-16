@@ -36,17 +36,14 @@
       }
 
       @keyframes float {
-        0% {
-          transform: translateY(0) translateX(0);
+        0%,
+        100% {
+          transform: translate(0, 0);
           opacity: 0.8;
         }
         50% {
-          transform: translateY(-20px) translateX(10px);
+          transform: translate(var(--float-x), var(--float-y));
           opacity: 1;
-        }
-        100% {
-          transform: translateY(0) translateX(0);
-          opacity: 0.8;
         }
       }
 
@@ -88,32 +85,65 @@
         display: inline-block;
         overflow: hidden;
         white-space: nowrap;
-        border-right: 5px solid red;
+        border-right: 5px solid pink;
         animation: typing 3s steps(30, end) forwards, blink 0.6s infinite;
       }
 
       .typewriter.done {
-        animation: fadeIn 1s ease-in-out, forwards, infiniteBlink 2.7s infinite;
+        animation: fadeIn 1s ease-in-out, forwards, infiniteBlink 3.3s infinite;
         border-right: none;
+      }
+
+      @keyframes randomFloat {
+        0%,
+        100% {
+          transform: translate(0, 0);
+          opacity: 0.8;
+        }
+        25% {
+          transform: translate(var(--random-x1), var(--random-y1));
+          opacity: 1;
+        }
+        50% {
+          transform: translate(var(--random-x2), var(--random-y2));
+          opacity: 0.8;
+        }
+        75% {
+          transform: translate(var(--random-x3), var(--random-y3));
+          opacity: 1;
+        }
       }
 
       .firefly {
         position: absolute;
-        width: 8px;
-        height: 8px;
+        width: 6px;
+        height: 6px;
         border-radius: 50%;
         opacity: 0.8;
-        animation: float 3s infinite ease-in-out alternate;
+        animation: float 4s infinite ease-in-out;
+        will-change: transform;
+        pointer-events: none;
       }
 
-      .firefly:nth-child(odd) {
-        background-color: rgba(255, 105, 180, 0.9); /* Pink */
+      .firefly:nth-child(3n) {
+        background-color: rgba(255, 105, 180, 0.9);
         box-shadow: 0 0 15px rgba(255, 105, 180, 0.9);
+        width: 8px;
+        height: 8px;
       }
 
-      .firefly:nth-child(even) {
-        background-color: rgba(0, 255, 100, 0.9); /* Green */
+      .firefly:nth-child(3n + 1) {
+        background-color: rgba(0, 255, 100, 0.9);
         box-shadow: 0 0 15px rgba(0, 255, 100, 0.9);
+        width: 7px;
+        height: 7px;
+      }
+
+      .firefly:nth-child(3n + 2) {
+        background-color: rgba(255, 223, 0, 0.9);
+        box-shadow: 0 0 15px rgba(255, 223, 0, 0.9);
+        width: 5px;
+        height: 5px;
       }
 
       .firefly:nth-child(1) {
@@ -189,9 +219,15 @@
       }
     </style>
   </head>
-  <body class="flex justify-center items-center h-screen bg-pink-800">
+  <body
+    class="flex justify-center items-center h-screen bg-gradient-to-br from-pink-700 via-pink-800 to-pink-900"
+  >
     <!-- Fireflies -->
     <div class="absolute w-full h-full">
+      <div class="firefly"></div>
+      <div class="firefly"></div>
+      <div class="firefly"></div>
+      <div class="firefly"></div>
       <div class="firefly"></div>
       <div class="firefly"></div>
       <div class="firefly"></div>
@@ -240,6 +276,70 @@
       </template>
     </div>
 
+    <div
+      class="fixed flex justify-center items-center w-full h-full"
+      x-data="{ 
+        flowers: Array.from({ length: 8 }),
+        randomPosition: () => {
+          const center = {
+            x: window.innerWidth / 2,
+            y: window.innerHeight / 2
+          };
+          const textArea = {
+            top: 0,
+            bottom: 150,
+            left: 0,
+            right: window.innerWidth
+          };
+          const mainFlowerRadius = 250; // Increased radius for better spacing
+          
+          let x, y;
+          do {
+            x = Math.random() * window.innerWidth;
+            y = Math.random() * window.innerHeight;
+            
+            // Calculate distance from center
+            const distanceFromCenter = Math.sqrt(
+              Math.pow(x - center.x, 2) + 
+              Math.pow(y - center.y, 2)
+            );
+            
+            // Try again if too close to center or in text area
+            if (distanceFromCenter < mainFlowerRadius || y < textArea.bottom) {
+              continue;
+            }
+            
+            // If we get here, position is valid
+            break;
+          } while (true);
+          
+          // Adjust for flower size
+          x = Math.max(30, Math.min(x, window.innerWidth - 30));
+          y = Math.max(30, Math.min(y, window.innerHeight - 30));
+          
+          return { x, y };
+        }
+      }"
+    >
+      <template x-for="(_, i) in flowers" :key="i">
+        <div
+          :style="`position: absolute; left: ${randomPosition().x}px; top: ${randomPosition().y}px; transform: rotate(${i * 45}deg);`"
+        >
+          <div class="relative w-6 h-6">
+            <template x-for="(_, j) in Array.from({ length: 5 })" :key="j">
+              <div
+                :style="`transform: rotate(${j * 72}deg) translateY(-15px);`"
+                class="absolute w-6 h-6 bg-pink-500 rounded-full glow"
+              ></div>
+            </template>
+            <div
+              class="absolute w-4 h-4 bg-pink-100 rounded-full top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 shadow-xl"
+            ></div>
+          </div>
+        </div>
+      </template>
+    </div>
+
     <audio id="bgMusic" src="bg-music.mp3" loop></audio>
 
     <script>
@@ -274,6 +374,64 @@
         setTimeout(() => {
           document.querySelector(".typewriter").classList.add("done");
         }, 3000);
+      });
+
+      function initFireflies() {
+        const fireflies = document.querySelectorAll(".firefly");
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+
+        // Create movement boundaries to keep fireflies visible
+        const margin = 50; // pixels from the edge
+
+        fireflies.forEach((firefly) => {
+          // Random initial position with margins
+          const randomX = margin + Math.random() * (viewportWidth - 2 * margin);
+          const randomY =
+            margin + Math.random() * (viewportHeight - 2 * margin);
+
+          // Use transform for better performance
+          firefly.style.transform = `translate(${randomX}px, ${randomY}px)`;
+
+          // Constrain movement range
+          const moveRange = Math.min(100, viewportWidth * 0.1); // Responsive movement range
+
+          // Set random float direction
+          firefly.style.setProperty(
+            "--float-x",
+            `${(Math.random() - 0.5) * moveRange}px`
+          );
+          firefly.style.setProperty(
+            "--float-y",
+            `${(Math.random() - 0.5) * moveRange}px`
+          );
+
+          // Randomize animation duration and delay
+          firefly.style.setProperty(
+            "--float-x",
+            `${(Math.random() - 0.5) * moveRange}px`
+          );
+          firefly.style.setProperty(
+            "--float-y",
+            `${(Math.random() - 0.5) * moveRange}px`
+          );
+
+          // Randomize animation duration and delay
+          const duration = 3 + Math.random() * 3;
+          const delay = Math.random() * -2; // Negative delay for immediate start
+
+          firefly.style.animationDuration = `${duration}s`;
+          firefly.style.animationDelay = `${delay}s`;
+        });
+      }
+
+      // Initialize fireflies on load and resize
+      document.addEventListener("DOMContentLoaded", initFireflies);
+      // Debounce resize handler for performance
+      let resizeTimeout;
+      window.addEventListener("resize", () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(initFireflies, 250);
       });
     </script>
   </body>
